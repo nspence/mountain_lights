@@ -43,10 +43,10 @@ def apply_lum_array(rgb_array, lum_array):
     return [apply_lum_multiplier(pixel, lum_array[index]) for index, pixel in enumerate(rgb_array)]
 
 def apply_lum_multiplier(pixel, lum_value):
-    return tuple([pixel[i] * lum_value for i in pixel])
+    return tuple([v * lum_value for v in pixel])
 
 def normalize_float_color(pixel):
-    return tuple([int(pixel[i]) for i in pixel])
+    return tuple([int(v) for v in pixel])
 
 def display_pixels(neo_pixel, rgb_array):
     for i in range(NUM_PIXELS):
