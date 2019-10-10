@@ -7,7 +7,7 @@ import urequests
 STEP_MS = 250
 NEOPIXEL_PIN = 2   # set GPIO2 (D4) to output to drive NeoPixels
 NUM_PIXELS = 16
-SUNRISE_DURATION = 300.0
+SUNRISE_DURATION = 600.0
 SUNRISE_DURATION_MS = 300 * 1000.0
 SUNRISE_COLORS_START = [(255, 176, 59), (227, 114, 173), (144, 132, 219)] # from center out
 SUNRISE_COLORS_END = [(255, 190, 90), (255, 183, 59)] # from center out
@@ -36,7 +36,6 @@ class Pixel:
 
     def _normalize_color_value(self, v):
         return max(min(int(v), 255), 0)
-
 
 class Sky:
     def __init__(self, num_pixels, start_colors, end_colors):
@@ -82,21 +81,38 @@ class Sky:
     def _merge_colors_weighted(self, color1, color2, ratio):
         return tuple([(color2[index] - v) * ratio + v for index, v in enumerate(color1)])
 
+class NeoPixelRunner:
+    def __init__(self, neopixel, sky, duration_ms, step_ms=STEP_MS):
+        self.neopixel = neopixel
+        self.sky = sky
+        self.duration_ms = duration_ms
+        self.step_ms = step_ms
+
+    def run(self):
+        start_time = utime.ticks_ms()
+        elapsed_ms = 0
+
+        while elapsed_ms < self.duration_ms:
+            display_values = self.sky.colors_at(elapsed_ms / self.duration_ms)
+            #  print(display_values)
+            self._display_pixels(display_values)
+
+            elapsed_ms = utime.ticks_diff(utime.ticks_ms(), start_time)
+            utime.sleep_ms(self.step_ms)
+
+    def _display_pixels(self, rgb_array):
+        for i, color in enumerate(rgb_array):
+          self.neopixel[i] = color
+        self.neopixel.write()
+
+
 def main():
     pin = Pin(NEOPIXEL_PIN, Pin.OUT)
     np = NeoPixel(pin, NUM_PIXELS)
     sky = Sky(NUM_PIXELS, SUNRISE_COLORS_START, SUNRISE_COLORS_END)
+    runner = NeoPixelRunner(np, sky, SUNRISE_DURATION_MS)
+    runner.run()
 
-    start_time = utime.ticks_ms()
-    elapsed_ms = 0
-
-    while elapsed_ms < SUNRISE_DURATION_MS:
-        display_values = sky.colors_at(elapsed_ms / SUNRISE_DURATION_MS)
-        print(display_values)
-        display_pixels(np, display_values)
-
-        elapsed_ms = utime.ticks_diff(utime.ticks_ms(), start_time)
-        utime.sleep_ms(STEP_MS)
 
 def get_sky_info():
     response = urequests.get("https://api.sunrise-sunset.org/json?lat=47.2529&lng=122.4443&formatted=0")
