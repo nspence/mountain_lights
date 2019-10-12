@@ -10,7 +10,7 @@ NUM_PIXELS = 16
 SUNRISE_DURATION = 600.0
 SUNRISE_DURATION_MS = 300 * 1000.0
 SUNRISE_COLORS_START = [(255, 176, 59), (227, 114, 173), (144, 132, 219)] # from center out
-SUNRISE_COLORS_END = [(255, 190, 90), (255, 183, 59)] # from center out
+SUNRISE_COLORS_END = [(255, 183, 59), (255, 190, 90)] # from center out
 
 class ColorPoint:
     def __init__(self, index, color):
@@ -32,10 +32,13 @@ class Pixel:
     # state is between 0 and 1
     def color_at(self, state):
         color = tuple([(self.end_color[index] - v) * state + v for index, v in enumerate(self.start_color)])
-        return tuple([self._normalize_color_value(v * state * self.full_luminosity) for v in color])
+        return tuple([self._normalize_color_value(v * self._luminosity_function(state) * self.full_luminosity) for v in color])
 
     def _normalize_color_value(self, v):
         return max(min(int(v), 255), 0)
+
+    def _luminosity_function(self, state):
+        return state**3
 
 class Sky:
     def __init__(self, num_pixels, start_colors, end_colors):
